@@ -1,0 +1,213 @@
+USE [db_MARCH19]
+
+---Display Data
+SELECT * FROM [dbo].[HousingData];
+
+---Standarizing the Date
+SELECT saleDateConverted, CONVERT(Date, SaleDate)
+FROM [dbo].[HousingData]
+
+UPDATE [dbo].[HousingData]
+SET SaleDate = CONVERT( Date, SaleDate)
+
+ALTER TABLE [dbo].[HousingData]
+ADD SaleDateConverted Date
+
+UPDATE [dbo].[HousingData]
+SET SaleDateConverted = CONVERT(Date, SaleDate)
+
+---Populatge Property Adress Data
+SELECT [dbo].[HousingData]
+FROM [dbo].[HousingData]
+  WHERE PropertyAddress IS NULL
+ORDER BY ParcelID
+
+
+SELECT *
+FROM [dbo].[HousingData]
+  WHERE PropertyAddress IS NULL
+ORDER BY ParcelID
+
+SELECT *
+FROM [dbo].[HousingData] a
+JOIN [dbo].[HousingData] b
+ON a.ParcelID = b.ParcelID
+AND a.[UniqueID] <> b.[UniqueID]
+WHERE a.PropertyAddress IS NULL
+
+SELECT a.ParcelID, a.PropertyAddress, b.ParcelID, b.PropertyAddress, ISNULL(a.PropertyAddress, b.PropertyAddress)
+FROM [dbo].[HousingData] a
+JOIN [dbo].[HousingData] b
+ON a.ParcelID = b.ParcelID
+AND a.[UniqueID] <> b.[UniqueID]
+WHERE a.PropertyAddress IS NULL
+
+UPDATE a
+SET PropertyAddress = ISNULL(a.PropertyAddress,b.PropertyAddress)
+FROM  [dbo].[HousingData] a
+JOIN [dbo].[HousingData] b
+	ON a.ParcelID = b.ParcelID
+	AND a.[UniqueID ] <> b.[UniqueID ]
+Where a.PropertyAddress IS NULL
+
+---Bifurcating Address Column into Address, City, State
+
+SELECT PropertyAddress
+FROM [dbo].[HousingData]
+  --WHERE PropertyAddress IS NULL
+  --ORDER BY ParcelID
+
+SELECT 
+ SUBSTRING(PropertyAddress,1, CHARINDEX(',', PropertyAddress)) AS Address 
+ FROM [dbo].[HousingData]
+
+ 
+SELECT 
+ 
+ SUBSTRING(PropertyAddress, 1, CHARINDEX(',', PropertyAddress) -1 ) as Address
+, SUBSTRING(PropertyAddress, CHARINDEX(',', PropertyAddress) + 1 , LEN(PropertyAddress)) as Address
+
+FROM [dbo].[HousingData]
+
+---Creating two more Address Column
+
+ALTER TABLE [dbo].[HousingData]
+Add PropertySplitAddress Nvarchar(255);
+
+Update [dbo].[HousingData]
+SET PropertySplitAddress = SUBSTRING(PropertyAddress, 1, CHARINDEX(',', PropertyAddress) -1 )
+
+
+ALTER TABLE [dbo].[HousingData]
+Add PropertySplitCity Nvarchar(255);
+
+Update [dbo].[HousingData]
+SET PropertySplitCity = SUBSTRING(PropertyAddress, CHARINDEX(',', PropertyAddress) + 1 , LEN(PropertyAddress))
+
+----Display DB with Split City and Address
+SELECT *
+FROM [dbo].[HousingData]
+
+SELECT OwnerAddress
+FROM [dbo].[HousingData]
+
+SELECT OwnerAddress
+ FROM [dbo].[HousingData]
+
+SELECT
+ PARSENAME(REPLACE(OwnerAddress, ',', '.'), 3)
+ ,PARSENAME(REPLACE(OwnerAddress, ',', '.'), 2)
+ ,PARSENAME(REPLACE(OwnerAddress, ',', '.'), 1)
+FROM [dbo].[HousingData]
+
+ALTER TABLE HousingData
+ADD OwnerSplitAddress Nvarchar(255);
+
+UPDATE HousingData
+SET OwnerSplitAddress = PARSENAME(REPLACE(OwnerAddress, ',', '.') , 3)
+
+
+ALTER TABLE HousingData
+ADD OwnerSplitCity Nvarchar(255);
+
+UPDATE HousingData
+SET OwnerSplitCity = PARSENAME(REPLACE(OwnerAddress, ',', '.') , 2)
+
+
+
+ALTER TABLE HousingData
+ADD OwnerSplitState Nvarchar(255);
+
+UPDATE HousingData
+SET OwnerSplitState = PARSENAME(REPLACE(OwnerAddress, ',', '.') , 1)
+
+
+Select *
+From [dbo].[HousingData]
+
+
+--Replacing Y to Yes and N to No
+
+SELECT DISTINCT(SoldAsVacant)
+FROM [dbo].[HousingData]
+
+----Checking Y and N count
+SELECT DISTINCT(SoldAsVacant), COUNT(SoldASVacant)
+FROM [dbo].[HousingData]
+GROUP By SoldAsVacant
+ORDER BY 2
+
+--Using CASE Method to replace Y and  N
+SELECT SoldAsVacant
+, CASE WHEN SoldAsVacant = 'Y' THEN 'Yes'
+	   WHEN SoldAsVacant = 'N' THEN 'No'
+	   ELSE SoldAsVacant
+	   END
+FROM [dbo].[HousingData]
+
+UPDATE HousingData
+SET SoldAsVacant = CASE WHEN SoldAsVacant = 'Y' THEN 'Yes'
+	   WHEN SoldAsVacant = 'N' THEN 'No'
+	   ELSE SoldAsVacant
+	   END
+---Verifying the Change
+SELECT DISTINCT(SoldAsVacant), COUNT(SoldASVacant)
+FROM [dbo].[HousingData]
+GROUP By SoldAsVacant
+ORDER BY 2
+
+
+---Removing the Duplicates using CTE(Common Table Expressions)
+
+WITH RowNumCTE AS(
+Select*, 
+       ROW_NUMBER() OVER(
+	   PARTITION BY ParcelID,
+	                                 PropertyAddress,
+									 SalePrice,
+									 SaleDate,
+									 LegalReference
+									 ORDER BY
+									       UniqueID
+										   ) row_num
+FROM [dbo].[HousingData]
+ )
+
+SELECT *
+FROM RowNumCTE
+WHERE row_num>1
+ORDER BY PropertyAddress
+
+Select *
+From [dbo].[HousingData]
+
+--Finally Deleting Unwanted/Unused column from the data.
+
+SELECT *
+FROM [dbo].[HousingData]
+
+ALTER TABLE [dbo].[HousingData]
+DROP COLUMN OwnerAddress, TaxDistrict, PropertyAddress, SaleDate
+
+---Display Full Cleaned Data
+
+SELECT *
+FROM [dbo].[HousingData]
+
+
+----End----
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
